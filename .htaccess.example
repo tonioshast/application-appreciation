@@ -1,0 +1,34 @@
+# ==============================================================================
+# MODÈLE DE SÉCURISATION .HTACCESS
+# Copiez ce fichier en le renommant simplement en ".htaccess" sur votre serveur
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # --------------------------------------------------------------------------
+    # 1. AUTORISER LES FICHIERS STATIQUES (CSS, JS, IMAGES, POLICES)
+    # --------------------------------------------------------------------------
+    RewriteCond %{REQUEST_URI} \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|map)$ [NC]
+    RewriteRule ^ - [L]
+
+    # --------------------------------------------------------------------------
+    # 2. BLOQUER L'ACCÈS DIRECT À INDEX.HTML / RACINE DU SITE
+    # --------------------------------------------------------------------------
+    RewriteCond %{REQUEST_URI} ^/(index\.html)?$ [NC]
+    RewriteCond %{QUERY_STRING} !(ticket=|token=) [NC]
+    
+    # ⚠️ REMplacez l'URL ci-dessous par l'adresse réelle de votre connecteur SSO
+    RewriteRule ^(.*)$ https://VOTRE-URL-CONNECTEUR.fr/ [R=302,L]
+
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 3. OPTIONS DE SÉCURITÉ COMPLÉMENTAIRES
+# ------------------------------------------------------------------------------
+Options -Indexes
+
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>

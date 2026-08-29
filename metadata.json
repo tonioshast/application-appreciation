@@ -1,0 +1,6 @@
+{
+  "name": "appreciAIA - Générateur d'appréciations",
+  "description": "Application web de génération et personnalisation d'appréciations scolaires par IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
