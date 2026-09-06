@@ -587,13 +587,13 @@
 
       // Status Banner
       const statusBanner = document.getElementById('statusBanner');
-      if (pbToken && mistralKey && profInfoStr) {
+      if (pbToken && profInfoStr) {
         statusBanner.className = 'status-banner status-success';
-        statusBanner.innerHTML = '✅ <strong>Authentification complète !</strong> Toutes les données (Token PB, Clé Mistral, Profil Enseignant) sont présentes dans localStorage.';
+        statusBanner.innerHTML = '✅ <strong>Authentification complète !</strong> Session connectée (Token PB & Profil Enseignant). Mistral est géré de façon sécurisée par le serveur.';
       } else if (lastError) {
         statusBanner.className = 'status-banner status-error';
         statusBanner.innerHTML = '❌ <strong>Dernière Erreur :</strong> ' + lastError;
-      } else if (pbToken || mistralKey || profInfoStr) {
+      } else if (pbToken || profInfoStr) {
         statusBanner.className = 'status-banner status-warning';
         statusBanner.innerHTML = '⚠️ <strong>Authentification partielle :</strong> Certaines données sont manquantes dans le localStorage.';
       } else {
@@ -616,19 +616,19 @@
         pbTokenBadge.style.color = '#fca5a5';
       }
 
-      // Mistral Key (Strictly hidden/masked)
+      // Mistral Key Status (Proxy backend or localStorage)
       const mistralVal = document.getElementById('mistralVal');
       const mistralBadge = document.getElementById('mistralBadge');
       if (mistralKey) {
-        mistralVal.textContent = `Présente et configurée (${mistralKey.length} caractères - Masquée)`;
-        mistralBadge.textContent = 'Active';
+        mistralVal.textContent = `Présente dans localStorage (${mistralKey.length} car. - Masquée)`;
+        mistralBadge.textContent = 'Active (Client)';
         mistralBadge.style.background = 'rgba(16, 185, 129, 0.2)';
         mistralBadge.style.color = '#6ee7b7';
       } else {
-        mistralVal.textContent = 'Non trouvée dans le localStorage';
-        mistralBadge.textContent = 'Manquante';
-        mistralBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-        mistralBadge.style.color = '#fca5a5';
+        mistralVal.textContent = 'Gérée en toute sécurité côté serveur (proxy-mistral.php)';
+        mistralBadge.textContent = 'Proxy Serveur';
+        mistralBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+        mistralBadge.style.color = '#6ee7b7';
       }
 
       // Last Mistral Prompt Debug Inspection
@@ -959,32 +959,30 @@
       const resDiv = document.getElementById('mistralTestResult');
       resDiv.style.display = 'block';
 
-      if (!key) {
-        resDiv.style.background = 'rgba(239, 68, 68, 0.2)';
-        resDiv.style.color = '#fca5a5';
-        resDiv.textContent = '❌ Aucune clé Mistral enregistrée.';
-        return;
-      }
-
       resDiv.style.background = 'rgba(99, 102, 241, 0.2)';
       resDiv.style.color = '#a5b4fc';
-      resDiv.textContent = '⏳ Envoi d\'une requête test vers l\'API Mistral (v1/models)...';
+      resDiv.textContent = '⏳ Envoi d\'une requête test vers le proxy Mistral (/proxy-mistral.php)...';
 
       try {
-        const response = await fetch('https://api.mistral.ai/v1/models', {
+        const response = await fetch('/proxy-mistral.php', {
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${key.trim()}`
-          }
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'mistral-small-latest',
+            messages: [{ role: 'user', content: 'Test de connexion réussi.' }]
+          })
         });
         const data = await response.json();
         if (response.ok) {
           resDiv.style.background = 'rgba(16, 185, 129, 0.2)';
           resDiv.style.color = '#6ee7b7';
-          resDiv.textContent = `🎉 Clé Mistral VALIDE ! (${data.data ? data.data.length : 0} modèles disponibles)`;
+          resDiv.textContent = `🎉 Proxy Mistral OPÉRATIONNEL ! Modèle: ${data.model || 'mistral-small-latest'}`;
         } else {
           resDiv.style.background = 'rgba(239, 68, 68, 0.2)';
           resDiv.style.color = '#fca5a5';
-          resDiv.textContent = `❌ Erreur API Mistral (${response.status}): ${data.message || JSON.stringify(data)}`;
+          resDiv.textContent = `❌ Erreur Proxy Mistral (${response.status}): ${data.error || data.message || JSON.stringify(data)}`;
         }
       } catch (err) {
         resDiv.style.background = 'rgba(239, 68, 68, 0.2)';

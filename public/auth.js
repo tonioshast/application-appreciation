@@ -1,5 +1,10 @@
 // auth.js - Gestion de la réception du ticket d'authentification appreciAIA
 (function() {
+  // Purge de sécurité : suppression de toute ancienne clé Mistral qui subsisterait dans le localStorage
+  try {
+    localStorage.removeItem('mistral_api_key');
+  } catch (e) {}
+
   const urlParams = new URLSearchParams(window.location.search);
   const ticket = urlParams.get('ticket');
 
@@ -18,13 +23,11 @@
       if (result.success) {
         const authData = result.data;
         const pbToken = authData.token;
-        const mistralKey = authData.cle_api_mistral;
         
         console.log("✅ Token PB reçu avec succès");
         
-        // Stockage propre dans le localStorage
+        // Stockage propre dans le localStorage (session utilisateur uniquement)
         if (pbToken) localStorage.setItem('pb_token', pbToken);
-        if (mistralKey) localStorage.setItem('mistral_api_key', mistralKey);
         if (authData.record) localStorage.setItem('prof_info', JSON.stringify(authData.record));
         
         localStorage.setItem('auth_last_fetch', new Date().toISOString());

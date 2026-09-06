@@ -54,8 +54,13 @@ window.initColonne3 = async function () {
     async function updatePromptButtonLabel() {
         const labelSpan = document.getElementById("btn-prompt-active-name");
         if (!labelSpan) return;
-        //const st = await window.state.load();
-        const active = st.prompts?.active || "Aucun";
+        let active = "Aucun";
+        try {
+            const st = (window.state && window.state.load ? await window.state.load() : null) || {};
+            active = st.prompts?.active || "Aucun";
+        } catch (e) {
+            console.warn("Could not load prompt active state:", e);
+        }
         labelSpan.textContent = active.replace(".json", "");
         labelSpan.title = active;
     }
