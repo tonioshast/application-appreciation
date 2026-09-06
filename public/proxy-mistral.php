@@ -35,13 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// 3. Récupération de la clé API Mistral (.env ou variables d'environnement)
+// 3. Récupération de la clé API Mistral et du modèle (.env ou variables d'environnement)
 $apiKey = getenv('MISTRAL_API_KEY') ?: getenv('CLE_API_MISTRAL');
+$modelName = getenv('MISTRAL_MODEL') ?: 'mistral-small-latest';
 
 // Recherche du fichier .env dans le dossier courant ou le dossier parent
 $envPaths = [__DIR__ . '/.env', __DIR__ . '/../.env'];
 foreach ($envPaths as $path) {
-    if (!$apiKey && file_exists($path)) {
+    if (file_exists($path)) {
         $envLines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($envLines as $line) {
             $line = trim($line);
@@ -50,12 +51,15 @@ foreach ($envPaths as $path) {
                 [$key, $value] = explode('=', $line, 2);
                 $key = trim($key);
                 $value = trim($value, " \t\n\r\0\x0B\"'");
-                if (in_array($key, ['MISTRAL_API_KEY', 'CLE_API_MISTRAL', 'clé-api-mistral'], true)) {
+                if (!$apiKey && in_array($key, ['MISTRAL_API_KEY', 'CLE_API_MISTRAL', 'clé-api-mistral'], true)) {
                     $apiKey = $value;
-                    break 2;
+                }
+                if (in_array($key, ['MISTRAL_MODEL', 'MODELE_MISTRAL', 'modele-mistral'], true)) {
+                    $modelName = $value;
                 }
             }
         }
+        if ($apiKey) break;
     }
 }
 
@@ -66,13 +70,22 @@ if (!$apiKey) {
     exit;
 }
 
-// 4. Lecture du corps de la requête envoyé par le front-end
-$inputPayload = file_get_contents('php://input');
+// 4. Lecture et adaptation du corps de la requête (surcharge dynamique du modèle si configuré)
+$rawInput = file_get_contents('php://input');
 
-if (empty($inputPayload)) {
+if (empty($rawInput)) {
     http_response_code(400);
     echo json_encode(['error' => 'Corps de la requête vide.']);
     exit;
+}
+
+$data = json_decode($rawInput, true);
+if (is_array($data)) {
+    // Le serveur impose le modèle défini dans la configuration
+    $data['model'] = $modelName;
+    $inputPayload = json_encode($data);
+} else {
+    $inputPayload = $rawInput;
 }
 
 // 5. Relais cURL vers Mistral AI
